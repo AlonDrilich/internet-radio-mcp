@@ -160,6 +160,12 @@ npx @modelcontextprotocol/inspector node src/index.js   # interactive testing
 
 The source is plain ES modules with JSDoc types (`src/`), so there is no build step. That is why `npx github:…` works without an npm publish.
 
+## Related
+
+- [radio-playlists](https://github.com/AlonDrilich/radio-playlists): weekly M3U playlists by country and genre from the same directory ([browse online](https://alondrilich.github.io/radio-playlists/)).
+- [radio-player-72fm](https://github.com/AlonDrilich/radio-player-72fm): WordPress plugin for putting a station's player on a site.
+- All 72FM tools: [72fm.com/developers](https://72fm.com/developers).
+
 ## Data and credits
 
 - The station directory data comes from [Radio Browser](https://www.radio-browser.info) and is in the public domain. Thanks to its maintainers and contributors. If you use this server heavily, please consider [supporting Radio Browser](https://www.radio-browser.info).
