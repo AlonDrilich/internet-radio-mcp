@@ -25,12 +25,20 @@ function check(cond, label) {
   if (!cond) failures++;
 }
 
+function npmConfigEnv() {
+  /** @type {Record<string, string>} */
+  const out = {};
+  for (const [k, v] of Object.entries(process.env)) if (/^npm_config_/i.test(k) && v !== undefined) out[k] = v;
+  return out;
+}
+
 /** @param {Record<string, string>} [extraEnv] */
 async function connect(extraEnv = {}) {
   const client = new Client({ name: 'internet-radio-smoke', version: '1.0.0' });
   const transport = new StdioClientTransport({
     ...launch,
-    env: { ...getDefaultEnvironment(), ...extraEnv },
+    // Forward npm_config_* so `-- npx ...` runs can use an isolated npm cache.
+    env: { ...getDefaultEnvironment(), ...npmConfigEnv(), ...extraEnv },
     stderr: 'pipe'
   });
   await client.connect(transport);
