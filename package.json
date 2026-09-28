@@ -1,0 +1,58 @@
+{
+  "name": "internet-radio-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for internet radio: search stations, get stream URLs, browse top stations, countries and genres from the public-domain Radio Browser directory. By 72FM.",
+  "mcpName": "io.github.AlonDrilich/internet-radio-mcp",
+  "type": "module",
+  "bin": {
+    "internet-radio-mcp": "src/index.js"
+  },
+  "main": "src/server.js",
+  "exports": {
+    ".": "./src/server.js"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "server.json"
+  ],
+  "scripts": {
+    "start": "node src/index.js",
+    "smoke": "node scripts/smoke.mjs",
+    "typecheck": "tsc -p jsconfig.json",
+    "test": "npm run typecheck && npm run smoke"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.1.0",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.1.0",
+    "@types/node": "^20.19.0",
+    "typescript": "^5.9.0"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "radio",
+    "internet-radio",
+    "radio-browser",
+    "streaming",
+    "music"
+  ],
+  "author": "Alon Drilich (https://72fm.com)",
+  "license": "MIT",
+  "homepage": "https://github.com/AlonDrilich/internet-radio-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlonDrilich/internet-radio-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AlonDrilich/internet-radio-mcp/issues"
+  }
+}
