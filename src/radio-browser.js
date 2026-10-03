@@ -45,6 +45,13 @@ const CONTROLS = /[\p{Cc}\u2028\u2029]/gu;
  */
 const INVISIBLE = /[\p{Co}\p{Cn}\p{Cs}\u00AD\u061C\u180E\u200B\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u206F\uFEFF\uFFF9-\uFFFB\u{E0000}-\u{E007F}]/gu;
 
+// Every other Default_Ignorable code point (variation selectors U+E0100.., combining grapheme joiner, Hangul
+// and Braille-style fillers, Mongolian free variation selectors...) can carry hidden text just like the tag
+// block. Kept: ZWNJ, ZWJ and VS16 (emoji and Persian/Indic text need them) — but only in runs of at most two,
+// because a run of them can itself encode bits.
+const HIDDEN_CHANNELS = /(?![\u200C\u200D\uFE0F])\p{Default_Ignorable_Code_Point}/gu;
+const ZW_RUN = /([\u200C\u200D\uFE0F])([\u200C\u200D\uFE0F])[\u200C\u200D\uFE0F]+/gu;
+
 /**
  * Plain, single-line, length-limited text from an untrusted source.
  * @param {unknown} value
@@ -53,7 +60,13 @@ const INVISIBLE = /[\p{Co}\p{Cn}\p{Cs}\u00AD\u061C\u180E\u200B\u200E\u200F\u202A
  */
 export function cleanText(value, max) {
   if (typeof value !== 'string') return '';
-  let text = value.replace(CONTROLS, ' ').replace(INVISIBLE, '').replace(/\s+/gu, ' ').trim();
+  let text = value
+    .replace(CONTROLS, ' ')
+    .replace(INVISIBLE, '')
+    .replace(HIDDEN_CHANNELS, '')
+    .replace(ZW_RUN, '$1$2')
+    .replace(/\s+/gu, ' ')
+    .trim();
   const points = Array.from(text);
   if (points.length > max) text = points.slice(0, Math.max(1, max - 1)).join('').trimEnd() + '…';
   return text;
@@ -69,6 +82,10 @@ export function cleanUrl(value) {
   if (typeof value !== 'string') return null;
   const text = value.trim();
   if (!text || text.length > LIMITS.url || /[\s\p{Cc}\p{Cf}\p{Co}\p{Cn}\p{Cs}\u2028\u2029]/u.test(text)) return null;
+  // The WHATWG parser reads a backslash as a slash, other parsers (curl, Python) as part of the user info:
+  // "https://bbc.co.uk\@evil.example/" would be a different host to different players. Refuse it, and
+  // require the scheme to be written out ("https:evil.example" is accepted by new URL()).
+  if (text.includes('\\') || !/^https?:\/\//i.test(text)) return null;
   let url;
   try {
     url = new URL(text);
@@ -77,7 +94,9 @@ export function cleanUrl(value) {
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
   if (!url.hostname || url.username || url.password) return null;
-  return text;
+  // Return the parsed, canonical form: the string that was checked is the string that is used.
+  const href = url.href;
+  return href.length <= LIMITS.url && /^[\x21-\x7e]+$/.test(href) ? href : null;
 }
 
 /**

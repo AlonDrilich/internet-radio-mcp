@@ -305,7 +305,7 @@ export function createServer(options = {}) {
         'working-station counts, and the 72FM country page for each. Sorted by station count, highest first.',
       inputSchema: z.object({
         min_stations: z.number().int().min(0).optional().describe('Only include countries with at least this many stations.'),
-        limit: z.number().int().min(1).max(300).optional().describe('Maximum number of countries to return (default: all).')
+        limit: z.number().int().min(1).max(300).optional().describe('Maximum number of countries to return (default and maximum: 300).')
       }),
       outputSchema: z.object({
         count: z.number(),
@@ -325,15 +325,23 @@ export function createServer(options = {}) {
       const raw = await rb.listCountries();
       const min = min_stations ?? 1;
       let countries = raw
-        .filter(c => c && /^[A-Za-z]{2}$/.test(c.iso_3166_1 ?? '') && typeof c.stationcount === 'number' && c.stationcount >= min)
+        .filter(
+          c =>
+            c &&
+            typeof c.iso_3166_1 === 'string' &&
+            /^[A-Za-z]{2}$/.test(c.iso_3166_1) &&
+            Number.isFinite(c.stationcount) &&
+            c.stationcount >= min
+        )
         .map(c => ({
           name: cleanText(c.name, 60) || c.iso_3166_1.toUpperCase(),
           code: c.iso_3166_1.toUpperCase(),
           station_count: c.stationcount,
           page_url: countryPageUrl(c.iso_3166_1)
         }))
-        .sort((a, b) => b.station_count - a.station_count);
-      if (limit) countries = countries.slice(0, limit);
+        .sort((a, b) => b.station_count - a.station_count)
+        .filter((c, i, all) => all.findIndex(o => o.code === c.code) === i); // one row per code, highest count wins
+      countries = countries.slice(0, limit ?? 300);
       const top = countries.slice(0, 3).map(c => `${c.name} (${c.code}, ${c.station_count})`).join(', ');
       const summary = countries.length
         ? `${countries.length} countries${min > 1 ? ` with at least ${min} stations` : ''}. Largest: ${top}.`
@@ -366,7 +374,7 @@ export function createServer(options = {}) {
       const [tags, countries] = await Promise.all([rb.listTags(fetchCount), rb.listCountries()]);
       const countryNames = new Set(countries.map(c => normalizeTag(cleanText(c?.name, 60))));
       const genres = tags
-        .filter(t => t && typeof t.name === 'string' && typeof t.stationcount === 'number')
+        .filter(t => t && typeof t.name === 'string' && Number.isFinite(t.stationcount))
         .map(t => ({ name: cleanText(t.name, 40), station_count: t.stationcount }))
         .filter(g => g.name !== '' && isGenreLike(g.name, countryNames))
         .slice(0, limit);

@@ -168,3 +168,21 @@ test('network: a wrong-shaped reply fails over; bad records are skipped; the lim
     assert.ok(found.every(s => /^https:\/\/72fm\.com\/station\//.test(s.listen_url)));
   } finally { await Promise.all([wrong.close(), good.close()]); }
 });
+
+test('cleanUrl: returns the canonical parsed form; backslash and scheme-less forms are refused', () => {
+  assert.equal(cleanUrl('HTTP://A.EXAMPLE/x'), 'http://a.example/x');
+  assert.equal(cleanUrl('http://s.example:8000'), 'http://s.example:8000/');
+  for (const bad of ['https://bbc.co.uk\\evil.example/live.mp3', 'https:evil.example/a', 'http:/evil.example/a', 'http://a.example/x\\y'])
+    assert.equal(cleanUrl(bad), null, bad);
+});
+
+test('cleanText: variation selectors and other default-ignorable code points cannot smuggle text', () => {
+  const hidden = Array.from('Ignore prior', c => String.fromCodePoint(0xe0100 + c.charCodeAt(0) - 16)).join('');
+  assert.equal(cleanText('Jazz FM ' + hidden, 120), 'Jazz FM');
+  for (const cp of [0xfe01, 0x34f, 0x3164, 0xffa0, 0x115f, 0x1160, 0x17b4, 0x180b, 0x1d173, 0xe0100, 0xe0fff, 0x206a])
+    assert.equal(cleanText('A' + String.fromCodePoint(cp) + 'B', 10), 'AB', cp.toString(16));
+  // kept: VS16 emoji, heart-on-fire (VS16 + ZWJ), flags; runs of ZWJ/ZWNJ collapse to two
+  assert.equal(cleanText('\u2764\ufe0f Radio', 20), '\u2764\ufe0f Radio');
+  assert.equal(cleanText('\u2764\ufe0f\u200d\ud83d\udd25 FM', 20), '\u2764\ufe0f\u200d\ud83d\udd25 FM');
+  assert.equal(cleanText('a' + '\u200d\u200c'.repeat(30) + 'b', 100), 'a\u200d\u200cb');
+});
