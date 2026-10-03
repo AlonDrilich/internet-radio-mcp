@@ -97,7 +97,7 @@ Broken streams (streams that failed the directory's last automated check) are ex
 
 | Tool | Arguments | Returns |
 | --- | --- | --- |
-| `search_stations` | `name?`, `tag?` (genre), `countrycode?` (ISO 3166-1 alpha-2, e.g. `BR`), `language?` (e.g. `portuguese`), `order` = `votes` \| `clickcount` \| `bitrate` (default `votes`), `limit` 1–50 (default 10) | Matching stations |
+| `search_stations` | `name?`, `tag?` (genre), `countrycode?` (ISO 3166-1 alpha-2, e.g. `BR`), `language?` (e.g. `portuguese`), `order` = `votes` \| `clickcount` (default `votes`), `limit` 1–50 (default 10) | Matching stations |
 | `get_station` | `id` (Radio Browser `stationuuid`) | One station |
 | `top_stations` | `by` = `votes` \| `clicks` \| `trending` (default `votes`), `countrycode?`, `tag?`, `limit` 1–50 (default 10) | Most voted, most played, or trending stations |
 | `list_countries` | `min_stations?` (default 1), `limit?` | Country name, ISO code, station count and 72FM country page (`https://72fm.com/radio/<iso2>`) |
@@ -132,6 +132,18 @@ Broken streams (streams that failed the directory's last automated check) are ex
 
 `find_radio(request)` finds stations for a mood, place, activity or genre, for example "calm jazz for a rainy evening" or "radio from Lisbon".
 
+## Untrusted data
+
+Station names, tags, languages, countries and URLs come from a public directory that anyone can edit, and the server hands them to an AI assistant. The server therefore treats every field as untrusted input:
+
+- Text is reduced to a single line: line breaks and control characters become spaces; zero-width characters, bidirectional controls, private-use code points and the invisible Unicode "tag" characters are removed; names are cut at 120 characters, tags at 40, other fields at 60.
+- URLs (`stream_url`, `homepage`, `favicon`) must be plain `http` or `https` without credentials; anything else (`javascript:`, `data:`, `file:`, a bare word) is dropped, and a station with no valid id or no playable stream is left out of the results.
+- `bitrate` is converted when a station reports bits per second, and dropped when it is implausible; the directory's own bitrate sort is not offered because it ranks those entries first.
+- Every result and the server instructions say that these fields are data, not instructions.
+- Replies are capped at 5 MB, must be a JSON list, and a mirror that redirects or answers with something else counts as failed.
+
+This reduces the risk of indirect prompt injection; it cannot remove it. A station can still be called "Ignore previous instructions", and that text will be shown, as one capped line, like any other name. Treat results as untrusted when you build on them.
+
 ## Reliability
 
 The server queries the Radio Browser mirrors in this order, with an 8-second timeout for each:
@@ -144,8 +156,8 @@ If all three fail, the tool returns a clear error (`isError: true`) and the serv
 
 You can change this behavior with two optional environment variables:
 
-- `RADIO_BROWSER_MIRRORS`: comma-separated base URLs to use instead of the defaults.
-- `RADIO_BROWSER_TIMEOUT_MS`: the timeout for each mirror, in milliseconds (default `8000`).
+- `RADIO_BROWSER_MIRRORS`: comma-separated base URLs to use instead of the defaults. Only `https` URLs without credentials are accepted (plain `http` only for `localhost`, `127.0.0.1` or `[::1]`, for testing); anything else is ignored with a warning on stderr. Redirects are never followed.
+- `RADIO_BROWSER_TIMEOUT_MS`: the timeout for each mirror, in milliseconds: a whole number from 100 to 60000 (default `8000`).
 
 ## Development
 

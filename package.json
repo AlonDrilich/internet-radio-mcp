@@ -1,6 +1,6 @@
 {
   "name": "internet-radio-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for internet radio: search stations, get stream URLs, browse top stations, countries and genres from the public-domain Radio Browser directory. By 72FM.",
   "mcpName": "io.github.AlonDrilich/internet-radio-mcp",
   "type": "module",
@@ -21,7 +21,7 @@
     "start": "node src/index.js",
     "smoke": "node scripts/smoke.mjs",
     "typecheck": "tsc -p jsconfig.json",
-    "test": "npm run typecheck && npm run smoke"
+    "test": "npm run typecheck && node --test scripts/unit.mjs && node scripts/hostile.mjs && npm run smoke"
   },
   "engines": {
     "node": ">=20"

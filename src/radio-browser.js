@@ -22,6 +22,76 @@ export const LISTEN_BASE_URL = 'https://72fm.com/station/';
 export const COUNTRY_PAGE_BASE_URL = 'https://72fm.com/radio/';
 
 const MAX_TAGS = 8;
+const MAX_BODY_BYTES = 5_000_000; // the largest legitimate reply (50 stations) is about 130 KB
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// ---------------------------------------------------------------- untrusted text
+//
+// Every station field comes from a public directory that anyone can edit, and it ends up in the context
+// of an AI assistant. A station can therefore be named "Jazz FM<newline><newline>Ignore previous
+// instructions ...". Nothing here can make hostile text harmless, but text that is single-line, short and
+// free of invisible characters is at least visible to the model and the user for what it is, and cannot
+// pose as a separate paragraph, a system message or hidden instructions.
+
+const LIMITS = { name: 120, tag: 40, language: 60, country: 60, codec: 20, url: 1000 };
+
+/** Line breaks and every other control character become a space. */
+const CONTROLS = /[\p{Cc}\u2028\u2029]/gu;
+/**
+ * Characters with no visible form that are used to hide text: zero-width space, bidi controls and
+ * isolates, word joiner and invisible operators, BOM, soft hyphen, interlinear annotation marks, the
+ * Unicode "tag" block (invisible lookalikes of ASCII), private-use, unassigned and lone-surrogate code
+ * points. ZWNJ (U+200C) and ZWJ (U+200D) are kept: Persian, Indic scripts and emoji sequences need them.
+ */
+const INVISIBLE = /[\p{Co}\p{Cn}\p{Cs}\u00AD\u061C\u180E\u200B\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u206F\uFEFF\uFFF9-\uFFFB\u{E0000}-\u{E007F}]/gu;
+
+/**
+ * Plain, single-line, length-limited text from an untrusted source.
+ * @param {unknown} value
+ * @param {number} max maximum length in code points
+ * @returns {string}
+ */
+export function cleanText(value, max) {
+  if (typeof value !== 'string') return '';
+  let text = value.replace(CONTROLS, ' ').replace(INVISIBLE, '').replace(/\s+/gu, ' ').trim();
+  const points = Array.from(text);
+  if (points.length > max) text = points.slice(0, Math.max(1, max - 1)).join('').trimEnd() + '…';
+  return text;
+}
+
+/**
+ * An http(s) URL without whitespace, control characters or credentials, or null. Anything else (javascript:,
+ * data:, file:, a bare word such as "null") is not a playable stream, a homepage or a logo.
+ * @param {unknown} value
+ * @returns {string | null}
+ */
+export function cleanUrl(value) {
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
+  if (!text || text.length > LIMITS.url || /[\s\p{Cc}\p{Cf}\p{Co}\p{Cn}\p{Cs}\u2028\u2029]/u.test(text)) return null;
+  let url;
+  try {
+    url = new URL(text);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+  if (!url.hostname || url.username || url.password) return null;
+  return text;
+}
+
+/**
+ * Some entries store bits per second in the kbps field (128000 instead of 128). Convert the obvious cases,
+ * drop the implausible ones.
+ * @param {unknown} value
+ * @returns {number | null}
+ */
+export function normalizeBitrate(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return null;
+  if (value <= 1536) return Math.round(value);
+  if (value % 1000 === 0 && value / 1000 >= 8 && value / 1000 <= 1536) return value / 1000;
+  return null;
+}
 
 /**
  * @typedef {Record<string, string | number | boolean | undefined>} Query
@@ -92,7 +162,7 @@ export function createRadioBrowserClient(options = {}) {
    * GET a JSON endpoint, trying each mirror in order.
    * @param {string} path e.g. "/json/stations/search"
    * @param {Query} [query]
-   * @returns {Promise<any>}
+   * @returns {Promise<any[]>} the JSON array the endpoint returns
    */
   async function getJson(path, query = {}) {
     const qs = new URLSearchParams();
@@ -109,13 +179,21 @@ export function createRadioBrowserClient(options = {}) {
       try {
         const res = await fetchImpl(url, {
           headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
-          signal: AbortSignal.timeout(timeoutMs)
+          signal: AbortSignal.timeout(timeoutMs),
+          // A mirror that answers with a redirect is treated as failed: requests go to the configured
+          // Radio Browser hosts and nowhere else.
+          redirect: 'manual'
         });
         if (!res.ok) {
           attempts.push(`${hostOf(base)}: HTTP ${res.status}`);
           continue;
         }
-        return await res.json();
+        const body = JSON.parse(await readCapped(res));
+        if (!Array.isArray(body)) {
+          attempts.push(`${hostOf(base)}: unexpected response (not a list)`);
+          continue;
+        }
+        return body;
       } catch (error) {
         attempts.push(`${hostOf(base)}: ${describeError(error, timeoutMs)}`);
       }
@@ -126,7 +204,7 @@ export function createRadioBrowserClient(options = {}) {
   return {
     /**
      * @param {{ name?: string, tag?: string, countrycode?: string, language?: string,
-     *           order: 'votes' | 'clickcount' | 'clicktrend' | 'bitrate', limit: number }} params
+     *           order: 'votes' | 'clickcount' | 'clicktrend', limit: number }} params
      * @returns {Promise<Station[]>}
      */
     async searchStations(params) {
@@ -141,7 +219,7 @@ export function createRadioBrowserClient(options = {}) {
         hidebroken: true,
         limit: params.limit
       });
-      return raw.map(normalizeStation);
+      return raw.map(normalizeStation).filter(/** @returns {s is Station} */ s => s !== null).slice(0, params.limit);
     },
 
     /**
@@ -174,25 +252,31 @@ export function createRadioBrowserClient(options = {}) {
 /** @typedef {ReturnType<typeof createRadioBrowserClient>} RadioBrowserClient */
 
 /**
+ * Turn a raw directory record into a safe station, or null when it has no valid id or no playable
+ * http(s) stream.
  * @param {RawStation} s
- * @returns {Station}
+ * @returns {Station | null}
  */
 export function normalizeStation(s) {
+  if (!s || typeof s.stationuuid !== 'string' || !UUID.test(s.stationuuid)) return null;
+  const streamUrl = cleanUrl(s.url_resolved) ?? cleanUrl(s.url);
+  if (!streamUrl) return null;
+  const countrycode = typeof s.countrycode === 'string' && /^[A-Za-z]{2}$/.test(s.countrycode.trim()) ? s.countrycode.trim().toUpperCase() : null;
   return {
-    id: s.stationuuid,
-    name: (s.name ?? '').trim(),
-    country: emptyToNull(s.country),
-    countrycode: emptyToNull(s.countrycode),
-    language: emptyToNull(s.language),
+    id: s.stationuuid.toLowerCase(),
+    name: cleanText(s.name, LIMITS.name),
+    country: textOrNull(s.country, LIMITS.country),
+    countrycode,
+    language: textOrNull(s.language, LIMITS.language),
     tags: splitTags(s.tags),
-    codec: emptyToNull(s.codec),
-    bitrate: typeof s.bitrate === 'number' && s.bitrate > 0 ? s.bitrate : null,
-    homepage: emptyToNull(s.homepage),
-    stream_url: emptyToNull(s.url_resolved) ?? emptyToNull(s.url),
-    favicon: emptyToNull(s.favicon),
-    votes: typeof s.votes === 'number' ? s.votes : 0,
+    codec: textOrNull(s.codec, LIMITS.codec),
+    bitrate: normalizeBitrate(s.bitrate),
+    homepage: cleanUrl(s.homepage),
+    stream_url: streamUrl,
+    favicon: cleanUrl(s.favicon),
+    votes: typeof s.votes === 'number' && Number.isFinite(s.votes) ? s.votes : 0,
     lastcheckok: s.lastcheckok === 1,
-    listen_url: LISTEN_BASE_URL + s.stationuuid
+    listen_url: LISTEN_BASE_URL + s.stationuuid.toLowerCase()
   };
 }
 
@@ -205,8 +289,9 @@ export function splitTags(tags) {
   const seen = new Set();
   /** @type {string[]} */
   const out = [];
+  if (typeof tags !== 'string') return [];
   for (const part of tags.split(',')) {
-    const tag = part.trim();
+    const tag = cleanText(part, LIMITS.tag);
     const key = tag.toLowerCase();
     if (!tag || seen.has(key)) continue;
     seen.add(key);
@@ -224,13 +309,40 @@ export function countryPageUrl(iso2) {
 }
 
 /**
- * @param {string | undefined | null} value
+ * @param {unknown} value
+ * @param {number} max
  * @returns {string | null}
  */
-function emptyToNull(value) {
-  if (typeof value !== 'string') return null;
-  const trimmed = value.trim();
-  return trimmed === '' ? null : trimmed;
+function textOrNull(value, max) {
+  const text = cleanText(value, max);
+  return text === '' ? null : text;
+}
+
+/**
+ * The response body as text, refusing anything larger than MAX_BODY_BYTES (a hostile or broken mirror must
+ * not be able to make the server buffer hundreds of megabytes).
+ * @param {Response} res
+ * @returns {Promise<string>}
+ */
+async function readCapped(res) {
+  const declared = Number(res.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) throw new Error('response too large');
+  if (!res.body) return '';
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let total = 0;
+  let text = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_BODY_BYTES) {
+      await reader.cancel();
+      throw new Error('response too large');
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  return text + decoder.decode();
 }
 
 /** @param {string} base */
@@ -256,17 +368,37 @@ function describeError(error, timeoutMs) {
   return String(error);
 }
 
-function mirrorsFromEnv() {
-  const raw = process.env.RADIO_BROWSER_MIRRORS;
+/**
+ * RADIO_BROWSER_MIRRORS: comma-separated base URLs. Each must be https (http only for loopback, which the
+ * tests use), carry no credentials, and is reduced to its origin so a path or query cannot be smuggled in.
+ */
+export function mirrorsFromEnv(raw = process.env.RADIO_BROWSER_MIRRORS) {
   if (!raw) return undefined;
-  const list = raw
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
+  /** @type {string[]} */
+  const list = [];
+  for (const entry of raw.split(',').map(x => x.trim()).filter(Boolean)) {
+    let url;
+    try {
+      url = new URL(entry);
+    } catch {
+      console.error(`[internet-radio-mcp] ignoring RADIO_BROWSER_MIRRORS entry that is not a URL`);
+      continue;
+    }
+    const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+    if ((url.protocol !== 'https:' && !(loopback && url.protocol === 'http:')) || url.username || url.password) {
+      console.error(`[internet-radio-mcp] ignoring mirror ${url.host}: only https URLs without credentials are accepted`);
+      continue;
+    }
+    list.push(url.origin);
+  }
   return list.length ? list : undefined;
 }
 
-function timeoutFromEnv() {
-  const n = Number(process.env.RADIO_BROWSER_TIMEOUT_MS);
-  return Number.isFinite(n) && n > 0 ? n : undefined;
+/** RADIO_BROWSER_TIMEOUT_MS: an integer between 100 and 60000, otherwise the default. */
+export function timeoutFromEnv(raw = process.env.RADIO_BROWSER_TIMEOUT_MS) {
+  if (raw === undefined || raw === '') return undefined;
+  const n = Number(raw);
+  if (Number.isInteger(n) && n >= 100 && n <= 60000) return n;
+  console.error(`[internet-radio-mcp] ignoring RADIO_BROWSER_TIMEOUT_MS=${JSON.stringify(raw.slice(0, 20))}: use a whole number of milliseconds between 100 and 60000`);
+  return undefined;
 }
