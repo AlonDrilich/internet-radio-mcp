@@ -1,0 +1,67 @@
+# Publishes the server to the official MCP Registry (registry.modelcontextprotocol.io):
+#   1. builds the Docker image and pushes it to ghcr.io/alondrilich/internet-radio-mcp:<version>
+#   2. logs in to the registry with GitHub OIDC (no secrets) and publishes server.json
+# Run it by hand (Actions -> Publish to MCP Registry -> Run workflow) after bumping the version in
+# package.json and server.json. A version can be published once; the registry keeps old versions.
+name: Publish to MCP Registry
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check versions agree and run the offline tests
+        run: |
+          set -euo pipefail
+          PKG=$(node -p "require('./package.json').version")
+          SRV=$(node -p "require('./server.json').version")
+          IMG=$(node -p "require('./server.json').packages[0].identifier")
+          test "$PKG" = "$SRV" || { echo "package.json $PKG != server.json $SRV"; exit 1; }
+          test "$IMG" = "ghcr.io/alondrilich/internet-radio-mcp:$SRV" || { echo "image tag $IMG does not match $SRV"; exit 1; }
+          echo "VERSION=$SRV" >> "$GITHUB_ENV"
+          npm ci --ignore-scripts
+          node --test scripts/unit.mjs
+          node scripts/hostile.mjs
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/alondrilich/internet-radio-mcp:${{ env.VERSION }}
+            ghcr.io/alondrilich/internet-radio-mcp:latest
+
+      - name: Smoke-test the pushed image (initialize over stdio)
+        run: |
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            | timeout 20 docker run -i --rm "ghcr.io/alondrilich/internet-radio-mcp:${VERSION}" | grep -q '"serverInfo"'
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Log in to the MCP Registry (GitHub OIDC)
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server.json
+        run: ./mcp-publisher publish
