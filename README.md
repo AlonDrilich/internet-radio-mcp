@@ -85,6 +85,16 @@ Any MCP client that can launch a stdio server can use the same command: `npx -y 
 
 The first launch downloads the package from GitHub, which takes a few seconds. Later launches use the npx cache.
 
+### Docker
+
+The same server is published as a container image, and is listed in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.AlonDrilich/internet-radio-mcp) as `io.github.AlonDrilich/internet-radio-mcp`:
+
+```sh
+docker run -i --rm ghcr.io/alondrilich/internet-radio-mcp:latest
+```
+
+In a client config, use `"command": "docker"` with `"args": ["run", "-i", "--rm", "ghcr.io/alondrilich/internet-radio-mcp:latest"]`.
+
 ## Tools
 
 All tools are read-only and annotated with `readOnlyHint: true` and `openWorldHint: true`. Each result contains:
