@@ -50,7 +50,7 @@ Restart Claude Desktop.
 
 ### Cursor
 
-Add the server to `~/.cursor/mcp.json` to use it everywhere, or to `.cursor/mcp.json` to use it in one project:
+[Add to Cursor](https://cursor.com/en/install-mcp?name=internet-radio&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImdpdGh1YjpBbG9uRHJpbGljaC9pbnRlcm5ldC1yYWRpby1tY3AiXX0%3D) with one click, or add the server to `~/.cursor/mcp.json` to use it everywhere, or to `.cursor/mcp.json` to use it in one project:
 
 ```json
 {
@@ -65,7 +65,7 @@ Add the server to `~/.cursor/mcp.json` to use it everywhere, or to `.cursor/mcp.
 
 ### VS Code (GitHub Copilot, Agent mode)
 
-Add the server to `.vscode/mcp.json`, or run **MCP: Add Server** from the Command Palette:
+[Install in VS Code](https://insiders.vscode.dev/redirect/mcp/install?name=internet-radio&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22github%3AAlonDrilich%2Finternet-radio-mcp%22%5D%7D) with one click, or add the server to `.vscode/mcp.json`, or run **MCP: Add Server** from the Command Palette:
 
 ```json
 {
@@ -78,6 +78,14 @@ Add the server to `.vscode/mcp.json`, or run **MCP: Add Server** from the Comman
   }
 }
 ```
+
+### Gemini CLI
+
+```sh
+gemini extensions install https://github.com/AlonDrilich/internet-radio-mcp
+```
+
+The repository carries a `gemini-extension.json`, so the server is added as the `internet-radio` extension.
 
 ### Other clients
 
