@@ -1,6 +1,6 @@
 {
   "name": "internet-radio-mcp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "MCP server for internet radio: search stations, get stream URLs, browse top stations, countries and genres from the public-domain Radio Browser directory. By 72FM.",
   "mcpName": "io.github.AlonDrilich/internet-radio-mcp",
   "type": "module",

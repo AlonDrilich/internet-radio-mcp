@@ -20,6 +20,11 @@ export const DEFAULT_TIMEOUT_MS = 8000;
 
 export const LISTEN_BASE_URL = 'https://72fm.com/station/';
 export const COUNTRY_PAGE_BASE_URL = 'https://72fm.com/radio/';
+/**
+ * Added to the links that point at 72fm.com. An AI app sends no referrer, so without it 72FM cannot tell
+ * that a visit came from this server at all. It names the tool and nothing else: no id, no query, no user.
+ */
+export const LINK_SOURCE = '?source=mcp';
 
 const MAX_TAGS = 8;
 const MAX_BODY_BYTES = 5_000_000; // the largest legitimate reply (50 stations) is about 130 KB
@@ -295,7 +300,7 @@ export function normalizeStation(s) {
     favicon: cleanUrl(s.favicon),
     votes: typeof s.votes === 'number' && Number.isFinite(s.votes) ? s.votes : 0,
     lastcheckok: s.lastcheckok === 1,
-    listen_url: LISTEN_BASE_URL + s.stationuuid.toLowerCase()
+    listen_url: LISTEN_BASE_URL + s.stationuuid.toLowerCase() + LINK_SOURCE
   };
 }
 
@@ -324,7 +329,7 @@ export function splitTags(tags) {
  * @param {string} iso2
  */
 export function countryPageUrl(iso2) {
-  return COUNTRY_PAGE_BASE_URL + iso2.toLowerCase();
+  return COUNTRY_PAGE_BASE_URL + iso2.toLowerCase() + LINK_SOURCE;
 }
 
 /**

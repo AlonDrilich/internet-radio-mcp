@@ -1,6 +1,6 @@
 {
   "name": "internet-radio",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Search internet radio stations and get stream URLs from the public Radio Browser directory.",
   "mcpServers": {
     "internet-radio": {

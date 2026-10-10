@@ -118,7 +118,7 @@ Broken streams (streams that failed the directory's last automated check) are ex
 | `search_stations` | `name?`, `tag?` (genre), `countrycode?` (ISO 3166-1 alpha-2, e.g. `BR`), `language?` (e.g. `portuguese`), `order` = `votes` \| `clickcount` (default `votes`), `limit` 1–50 (default 10) | Matching stations |
 | `get_station` | `id` (Radio Browser `stationuuid`) | One station |
 | `top_stations` | `by` = `votes` \| `clicks` \| `trending` (default `votes`), `countrycode?`, `tag?`, `limit` 1–50 (default 10) | Most voted, most played, or trending stations |
-| `list_countries` | `min_stations?` (default 1), `limit?` | Country name, ISO code, station count and 72FM country page (`https://72fm.com/radio/<iso2>`) |
+| `list_countries` | `min_stations?` (default 1), `limit?` | Country name, ISO code, station count and 72FM country page (`https://72fm.com/radio/<iso2>?source=mcp`) |
 | `list_genres` | `limit` 1–100 (default 30) | Top genre tags by station count. Placeholder and non-genre tags are filtered out (e.g. `undefined`, `radio`, `fm`, and country, region or language names). |
 
 ### Station fields
@@ -138,12 +138,12 @@ Broken streams (streams that failed the directory's last automated check) are ex
   "favicon": null,
   "votes": 33238,
   "lastcheckok": true,
-  "listen_url": "https://72fm.com/station/963fa65f-0601-11e8-ae97-52543be04c81"
+  "listen_url": "https://72fm.com/station/963fa65f-0601-11e8-ae97-52543be04c81?source=mcp"
 }
 ```
 
 - `stream_url` is the directory's resolved stream URL, or the original URL when no resolved one exists.
-- `listen_url` plays the station in the browser on 72FM.
+- `listen_url` plays the station in the browser on 72FM. The `?source=mcp` at the end only tells 72FM that the visit came from this server (apps send no referrer); it carries no id and nothing about you or your question.
 - `tags` holds up to 8 tags.
 
 ### Prompt

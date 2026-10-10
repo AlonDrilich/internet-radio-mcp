@@ -88,7 +88,7 @@ try {
   check(!jazz.res.isError && jazz.data?.count > 0, 'search_stations(jazz, BR) returns stations');
   check(jazz.data?.stations.every((/** @type {any} */ s) => s.countrycode === 'BR'), 'all results are in BR');
   const first = jazz.data?.stations[0];
-  check(!!first && UUID.test(first.id) && first.listen_url === `https://72fm.com/station/${first.id}`, 'listen_url = https://72fm.com/station/<uuid>');
+  check(!!first && UUID.test(first.id) && first.listen_url === `https://72fm.com/station/${first.id}?source=mcp`, 'listen_url = https://72fm.com/station/<uuid>?source=mcp');
   check(!!first && Array.isArray(first.tags) && first.tags.length <= 8 && typeof first.lastcheckok === 'boolean', 'station shape: tags[] <= 8, lastcheckok boolean');
   check(jazz.res.content.length === 2 && JSON.parse(/** @type {any} */ (jazz.res.content[1]).text).count === jazz.data.count, 'JSON also returned as text content');
   if (first) console.log(`  first: ${first.name} | ${first.codec} ${first.bitrate ?? '?'} kbps | ${first.stream_url}`);
@@ -116,7 +116,7 @@ try {
   const countries = await call(client, 'list_countries', { min_stations: 100 });
   const br = countries.data?.countries.find((/** @type {any} */ c) => c.code === 'BR');
   check(!countries.res.isError && countries.data?.count > 10, 'list_countries(min 100) returns many countries');
-  check(br?.page_url === 'https://72fm.com/radio/br', 'BR page_url = https://72fm.com/radio/br');
+  check(br?.page_url === 'https://72fm.com/radio/br?source=mcp', 'BR page_url = https://72fm.com/radio/br?source=mcp');
   check(countries.data?.countries.every((/** @type {any} */ c) => c.station_count >= 100), 'min_stations respected');
 
   // list_genres -------------------------------------------------------------

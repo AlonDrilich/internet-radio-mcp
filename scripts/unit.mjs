@@ -87,7 +87,7 @@ test('normalizeStation: hostile fields come out single-line, short and valid', (
   assert.equal(s.favicon, null);
   assert.equal(s.stream_url, 'https://ok.example/stream'); // the usable one wins over the javascript: one
   assert.equal(s.countrycode, 'BR');
-  assert.equal(s.listen_url, 'https://72fm.com/station/' + UUID);
+  assert.equal(s.listen_url, 'https://72fm.com/station/' + UUID + '?source=mcp');
 });
 
 test('normalizeStation: no valid id or no playable stream means no station', () => {

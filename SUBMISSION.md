@@ -28,7 +28,7 @@ Research date: 2026-09-28. Everything in this repo is local only. Nothing has be
 - **npm installs only the 3 runtime packages.** It fetches the git ref and installs `@modelcontextprotocol/server`, `@modelcontextprotocol/core` and `zod`. No devDependencies and no compiler run on the user's machine.
 - **Verified locally with fresh, isolated npm caches:**
   - `npx -y git+file://<repo>` passed the full smoke test (all tools against the live API). This is the same git-dependency code path npm uses for `github:` specs.
-  - `npm pack` + `npx -y --package=./internet-radio-mcp-1.0.2.tgz internet-radio-mcp` also passed the full smoke test. This is the flow a future npm publish would use.
+  - `npm pack` + `npx -y --package=./internet-radio-mcp-1.0.3.tgz internet-radio-mcp` also passed the full smoke test. This is the flow a future npm publish would use.
 - **The alternative (a `prepare` build) was tested and rejected.** A variant with a `prepare` script also works on npm 11. However, it installs the whole devDependency tree (TypeScript and the rest) and runs a build inside the MCP client's first launch. That is slower and a known failure point on older npm versions and locked-down machines.
 - **Type safety is still checked.** `npm run typecheck` runs `tsc` with `checkJs` and `strict` over `src/` and `scripts/`. It was confirmed to catch an injected error, so it is not a no-op config.
 
@@ -77,14 +77,14 @@ Insert it alphabetically (case-insensitive) between `aliafsahnoudeh/shahnameh-mc
 `server.json` follows the current schema, `https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json`. That is the newest dated schema; the registry only has an unreleased draft beyond it. It was validated locally against that schema with ajv. Its contents:
 
 - `name`: `io.github.AlonDrilich/internet-radio-mcp`. This is a GitHub namespace, so you authenticate with GitHub as AlonDrilich.
-- One `npm` package entry, `internet-radio-mcp@1.0.2`, with stdio transport and `runtimeHint: npx`.
+- One `npm` package entry, `internet-radio-mcp@1.0.3`, with stdio transport and `runtimeHint: npx`.
 - `package.json` has the matching `"mcpName": "io.github.AlonDrilich/internet-radio-mcp"`. The registry uses this to verify npm ownership.
 
 **The registry hosts metadata only.** It does not accept a bare GitHub repo; it needs a package on a supported registry, or a remote URL. The npm name `internet-radio-mcp` was free on 2026-09-28. Publishing is the owner's step:
 
 ```sh
 npm login
-npm publish --access public          # publishes internet-radio-mcp@1.0.2 (files: src/, README, LICENSE, server.json)
+npm publish --access public          # publishes internet-radio-mcp@1.0.3 (files: src/, README, LICENSE, server.json)
 brew install mcp-publisher           # or download the release binary from github.com/modelcontextprotocol/registry
 mcp-publisher login github           # device-flow login as AlonDrilich
 mcp-publisher publish                # reads ./server.json
@@ -98,7 +98,7 @@ mcp-publisher publish                # reads ./server.json
 
 1. **Create the public GitHub repo `AlonDrilich/internet-radio-mcp`** (MIT) and push this local repo (`git remote add origin …; git push -u origin main`).
 2. **Test the npx install from GitHub** on a clean machine or cache:
-   - `npx -y github:AlonDrilich/internet-radio-mcp --version` should print `1.0.2`.
+   - `npx -y github:AlonDrilich/internet-radio-mcp --version` should print `1.0.3`.
    - `claude mcp add internet-radio -- npx -y github:AlonDrilich/internet-radio-mcp`, then ask "Find jazz stations in Brazil".
 3. **Add the server on Glama** (https://glama.ai/mcp/servers):
    - `glama.json`, which claims maintainership for `AlonDrilich`, and a `Dockerfile` are already in the repo. Paste or point Glama at the Dockerfile if it asks.
