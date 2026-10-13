@@ -194,6 +194,7 @@ The source is plain ES modules with JSDoc types (`src/`), so there is no build s
 
 - [radio-playlists](https://github.com/AlonDrilich/radio-playlists): weekly M3U playlists by country and genre from the same directory ([browse online](https://alondrilich.github.io/radio-playlists/)).
 - [radio-player-72fm](https://github.com/AlonDrilich/radio-player-72fm): WordPress plugin for putting a station's player on a site.
+- [Radio stream URL finder](https://72fm.com/radio-stream-url-finder): the same lookup in a browser. Type a station's name and copy the address of its stream.
 - All 72FM tools: [72fm.com/developers](https://72fm.com/developers).
 
 ## Data and credits
