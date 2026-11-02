@@ -3,7 +3,7 @@
   "name": "io.github.AlonDrilich/internet-radio-mcp",
   "title": "Internet Radio",
   "description": "Search internet radio stations, stream URLs, top stations, countries and genres (Radio Browser).",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "websiteUrl": "https://github.com/AlonDrilich/internet-radio-mcp",
   "repository": {
     "url": "https://github.com/AlonDrilich/internet-radio-mcp",
@@ -13,14 +13,14 @@
     {
       "registryType": "npm",
       "identifier": "internet-radio-mcp",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "transport": {
         "type": "stdio"
       }
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/alondrilich/internet-radio-mcp:1.0.3",
+      "identifier": "ghcr.io/alondrilich/internet-radio-mcp:1.0.4",
       "transport": {
         "type": "stdio"
       }

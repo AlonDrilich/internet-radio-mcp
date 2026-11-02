@@ -2,7 +2,8 @@
 #   1. builds the Docker image and pushes it to ghcr.io/alondrilich/internet-radio-mcp:<version>
 #   2. logs in to the registry with GitHub OIDC (no secrets) and publishes server.json
 # Run it by hand (Actions -> Publish to MCP Registry -> Run workflow) after bumping the version in
-# package.json and server.json. A version can be published once; the registry keeps old versions.
+# package.json and server.json and running npm publish (server.json lists the npm package too, and
+# the registry checks it exists). A version can be published once; the registry keeps old versions.
 name: Publish to MCP Registry
 
 on:
@@ -29,9 +30,12 @@ jobs:
           set -euo pipefail
           PKG=$(node -p "require('./package.json').version")
           SRV=$(node -p "require('./server.json').version")
-          IMG=$(node -p "require('./server.json').packages[0].identifier")
+          IMG=$(node -p "require('./server.json').packages.find(p => p.registryType === 'oci').identifier")
+          NPM=$(node -p "require('./server.json').packages.find(p => p.registryType === 'npm').version")
           test "$PKG" = "$SRV" || { echo "package.json $PKG != server.json $SRV"; exit 1; }
           test "$IMG" = "ghcr.io/alondrilich/internet-radio-mcp:$SRV" || { echo "image tag $IMG does not match $SRV"; exit 1; }
+          test "$NPM" = "$SRV" || { echo "npm package version $NPM does not match $SRV"; exit 1; }
+          test "$(npm view "internet-radio-mcp@$SRV" version)" = "$SRV" || { echo "internet-radio-mcp@$SRV is not on npm yet; run npm publish first"; exit 1; }
           echo "VERSION=$SRV" >> "$GITHUB_ENV"
           npm ci --ignore-scripts
           node --test scripts/unit.mjs
