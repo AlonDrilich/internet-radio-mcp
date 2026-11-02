@@ -21,12 +21,12 @@ The station data comes from [Radio Browser](https://www.radio-browser.info), a c
 
 ## Install
 
-Requires Node.js 20 or newer. The server runs straight from GitHub with `npx`, so there is nothing to install globally.
+Requires Node.js 20 or newer. The server is published on npm as [`internet-radio-mcp`](https://www.npmjs.com/package/internet-radio-mcp) and runs with `npx`, so there is nothing to install globally.
 
 ### Claude Code
 
 ```sh
-claude mcp add internet-radio -- npx -y github:AlonDrilich/internet-radio-mcp
+claude mcp add internet-radio -- npx -y internet-radio-mcp
 ```
 
 Then run `/mcp` in a session to confirm that `internet-radio` is connected.
@@ -40,7 +40,7 @@ Open **Settings → Developer → Edit Config**. This opens `claude_desktop_conf
   "mcpServers": {
     "internet-radio": {
       "command": "npx",
-      "args": ["-y", "github:AlonDrilich/internet-radio-mcp"]
+      "args": ["-y", "internet-radio-mcp"]
     }
   }
 }
@@ -50,14 +50,14 @@ Restart Claude Desktop.
 
 ### Cursor
 
-[Add to Cursor](https://cursor.com/en/install-mcp?name=internet-radio&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImdpdGh1YjpBbG9uRHJpbGljaC9pbnRlcm5ldC1yYWRpby1tY3AiXX0%3D) with one click, or add the server to `~/.cursor/mcp.json` to use it everywhere, or to `.cursor/mcp.json` to use it in one project:
+[Add to Cursor](https://cursor.com/en/install-mcp?name=internet-radio&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImludGVybmV0LXJhZGlvLW1jcCJdfQ%3D%3D) with one click, or add the server to `~/.cursor/mcp.json` to use it everywhere, or to `.cursor/mcp.json` to use it in one project:
 
 ```json
 {
   "mcpServers": {
     "internet-radio": {
       "command": "npx",
-      "args": ["-y", "github:AlonDrilich/internet-radio-mcp"]
+      "args": ["-y", "internet-radio-mcp"]
     }
   }
 }
@@ -65,7 +65,7 @@ Restart Claude Desktop.
 
 ### VS Code (GitHub Copilot, Agent mode)
 
-[Install in VS Code](https://insiders.vscode.dev/redirect/mcp/install?name=internet-radio&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22github%3AAlonDrilich%2Finternet-radio-mcp%22%5D%7D) with one click, or add the server to `.vscode/mcp.json`, or run **MCP: Add Server** from the Command Palette:
+[Install in VS Code](https://insiders.vscode.dev/redirect/mcp/install?name=internet-radio&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22internet-radio-mcp%22%5D%7D) with one click, or add the server to `.vscode/mcp.json`, or run **MCP: Add Server** from the Command Palette:
 
 ```json
 {
@@ -73,7 +73,7 @@ Restart Claude Desktop.
     "internet-radio": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "github:AlonDrilich/internet-radio-mcp"]
+      "args": ["-y", "internet-radio-mcp"]
     }
   }
 }
@@ -89,9 +89,9 @@ The repository carries a `gemini-extension.json`, so the server is added as the 
 
 ### Other clients
 
-Any MCP client that can launch a stdio server can use the same command: `npx -y github:AlonDrilich/internet-radio-mcp`.
+Any MCP client that can launch a stdio server can use the same command: `npx -y internet-radio-mcp`.
 
-The first launch downloads the package from GitHub, which takes a few seconds. Later launches use the npx cache.
+The first launch downloads the package from npm, which takes a few seconds. Later launches use the npx cache.
 
 ### Docker
 

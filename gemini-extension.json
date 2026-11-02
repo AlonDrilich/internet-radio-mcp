@@ -7,7 +7,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "github:AlonDrilich/internet-radio-mcp"
+        "internet-radio-mcp"
       ]
     }
   }

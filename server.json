@@ -11,6 +11,14 @@
   },
   "packages": [
     {
+      "registryType": "npm",
+      "identifier": "internet-radio-mcp",
+      "version": "1.0.3",
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
       "registryType": "oci",
       "identifier": "ghcr.io/alondrilich/internet-radio-mcp:1.0.3",
       "transport": {
