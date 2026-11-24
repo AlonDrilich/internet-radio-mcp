@@ -1,5 +1,7 @@
 # internet-radio-mcp
 
+[![AlonDrilich/internet-radio-mcp MCP server](https://glama.ai/mcp/servers/AlonDrilich/internet-radio-mcp/badges/score.svg)](https://glama.ai/mcp/servers/AlonDrilich/internet-radio-mcp)
+
 An open-source [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server for internet radio. It lets Claude, Cursor, VS Code Copilot and other MCP clients search radio stations worldwide and get their direct stream URLs. It also lists top and trending stations, countries and genres.
 
 The station data comes from [Radio Browser](https://www.radio-browser.info), a community-maintained, public-domain directory with over 50,000 stations that have working streams. The server is built by [72FM](https://72fm.com), a free web radio player built on the same directory. Every result includes a `listen_url` that plays the station in the browser on 72FM, as well as the station's own `stream_url`.
